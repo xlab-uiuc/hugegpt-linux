@@ -998,6 +998,10 @@ void release_pages(struct page **pages, int nr)
 		if (is_huge_zero_page(&folio->page))
 			continue;
 
+		/* HugeGPT */
+		if (hgpt_page_free(&folio->page))
+			continue;
+
 		if (folio_is_zone_device(folio)) {
 			if (lruvec) {
 				unlock_page_lruvec_irqrestore(lruvec, flags);

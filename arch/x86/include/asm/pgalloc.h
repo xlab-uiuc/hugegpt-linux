@@ -5,6 +5,7 @@
 #include <linux/threads.h>
 #include <linux/mm.h>		/* for struct page */
 #include <linux/pagemap.h>
+#include <linux/hugegpt.h>
 
 #define __HAVE_ARCH_PTE_ALLOC_ONE
 #define __HAVE_ARCH_PGD_FREE
@@ -150,10 +151,16 @@ static inline void pgd_populate_safe(struct mm_struct *mm, pgd_t *pgd, p4d_t *p4
 static inline p4d_t *p4d_alloc_one(struct mm_struct *mm, unsigned long addr)
 {
 	gfp_t gfp = GFP_KERNEL_ACCOUNT;
+	struct page *page;
 
 	if (mm == &init_mm)
 		gfp &= ~__GFP_ACCOUNT;
-	return (p4d_t *)get_zeroed_page(gfp);
+	/* HugeGPT */
+	page = hgpt_page_alloc(mm, gfp, 0, P4D);
+	if (!page) {
+		return (p4d_t *)get_zeroed_page(gfp);
+	}
+	return (p4d_t *)page_address(page);
 }
 
 static inline void p4d_free(struct mm_struct *mm, p4d_t *p4d)

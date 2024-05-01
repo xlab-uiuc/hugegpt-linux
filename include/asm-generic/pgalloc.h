@@ -60,7 +60,12 @@ static inline pgtable_t __pte_alloc_one(struct mm_struct *mm, gfp_t gfp)
 {
 	struct page *pte;
 
-	pte = alloc_page(gfp);
+	/* HugeGPT */
+	pte = hgpt_page_alloc(mm, gfp, 0, PTE);
+	if (!pte) {
+		pte = alloc_page(gfp);
+	}
+
 	if (!pte)
 		return NULL;
 	if (!pgtable_pte_page_ctor(pte)) {
@@ -123,7 +128,11 @@ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
 
 	if (mm == &init_mm)
 		gfp = GFP_PGTABLE_KERNEL;
-	page = alloc_pages(gfp, 0);
+	/* HugeGPT */
+	page = hgpt_page_alloc(mm, gfp, 0, PMD);
+	if (!page) {
+		page = alloc_pages(gfp, 0);
+	}
 	if (!page)
 		return NULL;
 	if (!pgtable_pmd_page_ctor(page)) {
@@ -150,10 +159,16 @@ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
 static inline pud_t *__pud_alloc_one(struct mm_struct *mm, unsigned long addr)
 {
 	gfp_t gfp = GFP_PGTABLE_USER;
+	struct page *page;
 
 	if (mm == &init_mm)
 		gfp = GFP_PGTABLE_KERNEL;
-	return (pud_t *)get_zeroed_page(gfp);
+	/* HugeGPT */
+	page = hgpt_page_alloc(mm, gfp, 0, PUD);
+	if (!page) {
+		return (pud_t *)get_zeroed_page(gfp);
+	}
+	return (pud_t *)page_address(page);
 }
 
 #ifndef __HAVE_ARCH_PUD_ALLOC_ONE
